@@ -27,6 +27,11 @@ class UtilitySpace(object):
         return self.root
 
 
+    ### UtilitySpace概要
+    def getUtilitySpaceName(self):
+        return self.root.find('objective').get('name')
+
+
     ### Issue関連
     def getIssues(self):
         return self.issues
@@ -68,6 +73,21 @@ class UtilitySpace(object):
     def getReservationValue(self):
         return self.reservationValue
 
+    ### デバック関連
+    def printUtilitySpaceInfo(self):
+        print("Name: " + self.getUtilitySpaceName())
+
+        issues = self.getIssues()
+        for i, issue in enumerate(issues):
+            print("Issue " + str(i) + ": " + issue.get('name') + " | ", end='')
+
+            values = self.getValues(i+1)
+            for value in values:
+                print(value.get('value'), end=' ')
+            print()
+        print("Discount Factor: " + str(self.getDiscountFactor()))
+        print("Reservation Value: " + str(self.getReservationValue()))
+
 
 
 
@@ -75,8 +95,4 @@ class UtilitySpace(object):
 
 xml_path = './testXML.xml'
 us = UtilitySpace(xml_path)
-print(us.getDiscountFactor())
-print(us.getReservationValue())
-
-
-
+us.printUtilitySpaceInfo()
