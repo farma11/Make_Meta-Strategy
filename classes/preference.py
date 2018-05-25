@@ -17,7 +17,12 @@ class Preference(domain.Domain):
 
         self.discoutFactor = -1.0
         self.reservationValue = -1.0
-        self.__getPreferenceInfo()
+        if self.__isCurrectFormat():
+            self.__getPreferenceInfo()
+        else:
+            print("Error (" + self.domainXML_path + "): 交渉ドメインとフォーマットが一致しません．プログラムを終了します．", file=sys.stderr)
+            sys.exit(1) # 異常終了
+
 
     def __getPreferenceInfo(self):
         self.weights = self.__getIssueWeights()
@@ -31,8 +36,18 @@ class Preference(domain.Domain):
             weights.append(float(weight_tag.get('value')))
         return weights
 
+    def __isCurrectFormat(self):
+        issues = self.root.find('objective').findall('issue')
+        if len(issues) != self.domain.getIssueSize():
+            return False
+        for i, issue in enumerate(issues):
+            values = issue.findall('item')
+            if len(values) != self.domain.getValueSize(i):
+                return False
+        return True
+
     ### Preference概要
-    def getUtilitySpaceName(self):
+    def getPreferenceName(self):
         return self.root.find('objective').get('name')
 
     def getDomain(self):
@@ -48,7 +63,7 @@ class Preference(domain.Domain):
 
     ### デバック関連
     def printUtilitySpaceInfo(self):
-        print("Name: " + self.getUtilitySpaceName())
+        print("Name: " + self.getPreferenceName())
 
         domain = self.getDomain()
         issues = domain.getIssues()
