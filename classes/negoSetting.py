@@ -1,6 +1,10 @@
 # coding: UTF-8
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 import domain, preference
+
 
 class NegoSetting(object):
 
@@ -12,6 +16,26 @@ class NegoSetting(object):
 
     def getUtilityValue(self, prefID, bid):
         return self.prefs[prefID-1].getUtilityValue(bid)
+
+    def show3Dgraph(self):
+        bids = self.domain.getAllBids()
+
+        bidUtils = [[], [], []]
+        for bid in bids:
+            bidUtils[0].append(self.prefs[0].getUtilityValue(bid))
+            bidUtils[1].append(self.prefs[1].getUtilityValue(bid))
+            bidUtils[2].append(self.prefs[2].getUtilityValue(bid))
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(bidUtils[0], bidUtils[1], bidUtils[2], label='bid')
+        ax.legend()
+        ax.set_xlabel('Agent 0\'s utility')
+        ax.set_ylabel('Agent 1\'s utility')
+        ax.set_zlabel('Agent 2\'s utility')
+        plt.show()
+
+            
     
     def printNegoSetting(self):
         print("Name: " + self.domain.getDomainName())
@@ -45,4 +69,5 @@ ns = NegoSetting(
     ]
 )
 ns.printNegoSetting()
+ns.show3Dgraph()
 
