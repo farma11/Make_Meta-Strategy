@@ -9,6 +9,9 @@ class NegoSetting(object):
         self.prefs = []
         for pref_path in pref_pathes:
             self.prefs.append(preference.Preference(domain_path, pref_path))
+
+    def getUtilityValue(self, prefID, bid):
+        return self.prefs[prefID-1].getUtilityValue(bid)
     
     def printNegoSetting(self):
         print("Name: " + self.domain.getDomainName())
@@ -23,6 +26,14 @@ class NegoSetting(object):
                 print(value.get('value'), end=' ')
             print()
 
+        bids = ns.domain.getAllBids()
+        for bid in bids:
+            print(bid, end=' ')
+            print('{0:.4f}'.format(ns.getUtilityValue(1, bid)), end=' ')
+            print('{0:.4f}'.format(ns.getUtilityValue(2, bid)), end=' ')
+            print('{0:.4f}'.format(ns.getUtilityValue(3, bid)))
+        
+
 # テスト
 root_path = '../Scenarios/testScenario/'
 ns = NegoSetting(
@@ -33,3 +44,5 @@ ns = NegoSetting(
         root_path + 'testPreference3.xml',
     ]
 )
+ns.printNegoSetting()
+

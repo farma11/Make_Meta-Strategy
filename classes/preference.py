@@ -70,6 +70,16 @@ class Preference(domain.Domain):
     def getIssueWeight(self, issueID):
         return self.issueWeights[issueID-1]
 
+    def getUtilityValue(self, bid):
+        utility = 0.0
+        issues = self.root.find('objective').findall('issue')
+        for i, issue in enumerate(issues):
+            value = issue.findall('item')[bid[i]-1]
+
+            utility += self.issueWeights[i] * float(value.get('evaluation')) / self.issueMaxEvaluations[i]
+        return utility
+
+
     ### 割引効用関係
     def getDiscountFactor(self):
         return self.discoutFactor
@@ -83,20 +93,23 @@ class Preference(domain.Domain):
         print("Name: " + self.getPreferenceName())
 
         domain = self.getDomain()
-        issues = domain.getIssues()
+        issues = self.root.find('objective').findall('issue')
         for i, issue in enumerate(issues):
             print("Issue " + str(i) + ": " \
                 + issue.get('name') + " (" + str(self.getIssueWeight(i+1)) + ")" \
                 + " | ", end='')
-            values = domain.getValues(i+1)
+            values = issue.findall('item')
             for value in values:
-                print(value.get('value'), end=' ')
+                print(str(value.get('value')) + "(" + str(value.get('evaluation')) + ")", end=' ')
             print()
         print("Discount Factor: " + str(self.getDiscountFactor()))
         print("Reservation Value: " + str(self.getReservationValue()))
 
 # テスト
-us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
-us.printUtilitySpaceInfo()
+# us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference2.xml')
+# us.printUtilitySpaceInfo()
+# bids = us.domain.getAllBids()
+# for bid in bids:
+#     print(str(bid) + " " + str(us.getUtilityValue(bid)))
 
         
