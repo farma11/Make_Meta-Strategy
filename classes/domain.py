@@ -1,6 +1,6 @@
 # coding: UTF-8
 
-import sys
+import sys, copy, math
 from lxml import etree # XMLのパース
 
 class Domain(object):
@@ -47,6 +47,25 @@ class Domain(object):
     def getDomainSize(self):
         return self.domainSize
 
+    def getAllBids(self):
+        bids = [[]]
+        for i in range(len(self.issues)):
+            tbids = copy.deepcopy(bids)
+            for j in range(len(self.values[i])-1):
+                bids = bids + copy.deepcopy(tbids)
+            for j in range(len(self.values[i])):
+                for k in range(len(tbids)):
+                    bids[k + j*len(tbids)].append(j+1)
+
+        if self.domainSize == len(bids):
+            return bids
+        else:
+            print("Error (" + __file__ + "): 全ての合意案候補を取得失敗しました．プログラムを終了します．", file=sys.stderr)
+            sys.exit(1) # 異常終了
+
+
+
+
     def printDomainInfo(self):
         print("Name: " + self.getDomainName())
 
@@ -60,9 +79,10 @@ class Domain(object):
             print()
 
         print("Domain Size: " + str(self.getDomainSize()))
+        print(self.getAllBids())
 
 
-domain = Domain('./testDomain.xml')
+domain = Domain('../Scenarios/testScenario/testDomain.xml')
 domain.printDomainInfo()
 
     
