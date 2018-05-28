@@ -92,11 +92,10 @@ class Preference(domain.Domain):
     def printUtilitySpaceInfo(self):
         print("Name: " + self.getPreferenceName())
 
-        domain = self.getDomain()
         issues = self.root.find('objective').findall('issue')
         for i, issue in enumerate(issues):
             print("Issue " + str(i) + ": " \
-                + issue.get('name') + " (" + str(self.getIssueWeight(i+1)) + ")" \
+                + issue.get('name') + " (" + str(self.getIssueWeight(i+1)) + " x)" \
                 + " | ", end='')
             values = issue.findall('item')
             for value in values:
@@ -105,11 +104,13 @@ class Preference(domain.Domain):
         print("Discount Factor: " + str(self.getDiscountFactor()))
         print("Reservation Value: " + str(self.getReservationValue()))
 
+        bids = self.domain.getAllBids()
+        for bid in bids:
+            print(bid, end=' ')
+            print('{0:.4f}'.format(self.getUtilityValue(bid)))
+
 # テスト
-# us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference2.xml')
-# us.printUtilitySpaceInfo()
-# bids = us.domain.getAllBids()
-# for bid in bids:
-#     print(str(bid) + " " + str(us.getUtilityValue(bid)))
+us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference2.xml')
+us.printUtilitySpaceInfo()
 
         
