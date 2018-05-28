@@ -79,14 +79,31 @@ class Preference(domain.Domain):
             utility += self.issueWeights[i] * float(value.get('evaluation')) / self.issueMaxEvaluations[i]
         return utility
 
+    def getDiscountedValue(self, time, value):
+        return value * (self.discoutFactor ** time)
+
 
     ### 割引効用関係
     def getDiscountFactor(self):
         return self.discoutFactor
 
+    def putDiscountFactor(self, df):
+        if 0.0 < df <= 1.0:
+            self.discoutFactor = df
+        else:
+            print("Error: 割引係数の値が不正です．プログラムを終了します．", file=sys.stderr)
+            sys.exit(1) # 異常終了
+
     ### 留保価格関係
     def getReservationValue(self):
         return self.reservationValue
+
+    def putReservationValue(self, rv):
+        if 0.0 <= rv <= 1.0:
+            self.reservationValue = rv
+        else:
+            print("Error: 留保価格の値が不正です．プログラムを終了します．", file=sys.stderr)
+            sys.exit(1) # 異常終了
 
     ### デバック関連
     def printUtilitySpaceInfo(self):
@@ -111,6 +128,9 @@ class Preference(domain.Domain):
 
 # テスト
 us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference2.xml')
+us.printUtilitySpaceInfo()
+us.putDiscountFactor(0.39)
+us.putReservationValue(0.9)
 us.printUtilitySpaceInfo()
 
         
