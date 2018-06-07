@@ -105,6 +105,19 @@ class Preference(domain.Domain):
             print("Error: 留保価格の値が不正です．プログラムを終了します．", file=sys.stderr)
             sys.exit(1) # 異常終了
 
+    ### 合意案候補関係
+    def getAllBids(self):
+        return self.domain.getAllBids()
+
+    def getOverRV_Bids(self):
+        bids = self.domain.getAllBids()
+
+        overRV_bids = []
+        for bid in bids:
+            if self.getUtilityValue(bid) >= self.reservationValue:
+                overRV_bids.append(bid)
+        return overRV_bids
+
     ### デバック関連
     def printUtilitySpaceInfo(self):
         print("Name: " + self.getPreferenceName())
@@ -127,10 +140,14 @@ class Preference(domain.Domain):
             print('{0:.4f}'.format(self.getUtilityValue(bid)))
 
 # テスト
-us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference2.xml')
+us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
 us.printUtilitySpaceInfo()
-us.putDiscountFactor(0.39)
-us.putReservationValue(0.9)
-us.printUtilitySpaceInfo()
+print(us.getAllBids())
+print(us.getOverRV_Bids())
+# us.putDiscountFactor(0.39)
+# us.putReservationValue(0.9)
+# us.printUtilitySpaceInfo()
+# print(us.getAllBids())
+# print(us.getOverRV_Bids())
 
         
