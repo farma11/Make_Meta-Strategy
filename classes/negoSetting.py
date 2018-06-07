@@ -1,6 +1,7 @@
 # coding: UTF-8
 
 import matplotlib.pyplot as plt
+import itertools
 from collections import Counter
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -26,10 +27,56 @@ class NegoSetting(object):
         for pref in self.prefs:
             temp_overRV_Bids_set = set(set(map(tuple, pref.getOverRV_Bids())))
             overRV_Bids_set = overRV_Bids_set.intersection(temp_overRV_Bids_set)
-            print(overRV_Bids_set)
+            # print(overRV_Bids_set)
         return list(overRV_Bids_set) 
 
+    def getParetoBids_for2Players(self, prefID1, prefID2):
+        paretoBids = []
 
+        allBids = self.domain.getAllBids()
+        bidInfoes = []
+        for bid in allBids:
+            bidInfoes.append((bid, self.getUtilityValue(prefID1, bid), self.getUtilityValue(prefID2, bid)))
+
+        bidInfoes = sorted(bidInfoes, key=lambda x: float(-x[1]))
+
+        maxIdx = -1
+        maxUtil = -1.0
+        for i, bidInfo in enumerate(bidInfoes):
+            if 1.0 - bidInfo[1] < 1e-10 and 1.0 - bidInfo[2] < 1e-10:
+                return [bidInfo[0]]
+
+            if maxUtil < bidInfo[2]:
+                if maxIdx != -1 and bidInfoes[maxIdx][1] > bidInfo[1]:
+                    paretoBids.append(bidInfoes[maxIdx][0])
+                maxUtil = bidInfo[2]
+                maxIdx = i
+
+        bidInfoes = sorted(bidInfoes, key=lambda x: float(-x[2]))
+
+        maxIdx = -1
+        maxUtil = -1.0
+        for i, bidInfo in enumerate(bidInfoes):
+
+            if maxUtil < bidInfo[1]:
+                if i != 0 and bidInfoes[i-1][2] > bidInfo[2]:
+                    if bidInfoes[maxIdx][0] not in paretoBids:
+                        paretoBids.append(bidInfoes[maxIdx][0])
+                maxUtil = bidInfo[1]
+                maxIdx = i
+
+        return paretoBids
+
+    def getParetoBids_forMultiPlayers(self):
+        players_comb = itertools.combinations([i+1 for i in range(len(self.prefs))],2)
+        paretoBids_set = set()
+
+        for comb in players_comb:
+            addBids_set = set(map(tuple, self.getParetoBids_for2Players(comb[0], comb[1])))
+            # print(str(comb[0]) + " " + str(comb[1]) + ": " + str(addBids_set))
+            paretoBids_set = paretoBids_set.union(addBids_set)
+
+        return list(paretoBids_set)
 
 
     def getMultiMOL(self, bids):
@@ -80,13 +127,16 @@ class NegoSetting(object):
             for value in values:
                 print(value.get('value'), end=' ')
             print()
-
        
         bids = ns.domain.getAllBids()
-        print("MOL (All bids): " + str(self.getMultiMOL(bids)))
+        print("MOL (All bids)       : " + '{0:.6f}'.format(self.getMultiMOL(bids)))
         
         overRV_Bids = ns.getOverRV_Bids_forAllPlayers()
-        print("MOL (ALL OverRV bids): " + str(self.getMultiMOL(overRV_Bids)))
+        print("MOL (ALL OverRV bids): " + '{0:.6f}'.format(self.getMultiMOL(overRV_Bids)))
+
+        paretoBids = ns.getParetoBids_forMultiPlayers()
+        print("MOL (ALL Pareto bids): " + '{0:.6f}'.format(self.getMultiMOL(paretoBids)))
+
         for bid in bids:
             print(bid, end=' ')
             print('{0:.4f}'.format(ns.getUtilityValue(1, bid)), end=' ')
@@ -105,5 +155,7 @@ ns = NegoSetting(
     ]
 )
 ns.printNegoSetting()
+# print("Pareto: ", end="")
+# print(ns.getParetoBids_forMultiPlayers())
 ns.show3Dgraph(ns.getOverRV_Bids_forAllPlayers())
 
