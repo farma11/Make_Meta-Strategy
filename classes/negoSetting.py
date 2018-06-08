@@ -22,10 +22,10 @@ class NegoSetting(object):
     def getUtilityValue(self, prefID, bid):
         return self.prefs[prefID-1].getUtilityValue(bid)
 
-    def getOverRV_Bids_forAllPlayers(self):
-        overRV_Bids_set = set(set(map(tuple, self.domain.getAllBids())))
+    def getOverRV_Bids_forAllPlayers(self, allBids):
+        overRV_Bids_set = set(set(map(tuple, allBids)))
         for pref in self.prefs:
-            temp_overRV_Bids_set = set(set(map(tuple, pref.getOverRV_Bids())))
+            temp_overRV_Bids_set = set(set(map(tuple, pref.getOverRV_Bids(allBids))))
             overRV_Bids_set = overRV_Bids_set.intersection(temp_overRV_Bids_set)
             # print(overRV_Bids_set)
         return list(overRV_Bids_set) 
@@ -78,6 +78,34 @@ class NegoSetting(object):
 
         return list(paretoBids_set)
 
+    def getNashProduct(self, bid):
+        isOver_RV = True
+
+        nashProduct = 1.0
+        for pref in self.prefs:
+            if pref.getUtilityValue(bid) > pref.getReservationValue():
+                nashProduct *= (pref.getUtilityValue(bid) - pref.getReservationValue())
+            else: 
+                isOver_RV = False
+        if isOver_RV: return nashProduct
+        else: return 1e-6 - 10
+    
+    def getNashSolution(self):
+        allOverRV_Bids = self.getOverRV_Bids_forAllPlayers(self.getDomain().getAllBids())
+
+        nashSolutions = []
+        nashProduct_max = 0.0
+        for bid in allOverRV_Bids:
+            nashProduct_temp = 1.0
+            for pref in self.prefs:
+                nashProduct_temp *= (pref.getUtilityValue(bid) - pref.getReservationValue())
+            if nashProduct_max < nashProduct_temp:
+                nashProduct_max = nashProduct_temp
+                nashSolutions = [bid]
+            elif abs(nashProduct_max - nashProduct_temp) <= 1e-10:
+                nashSolutions.append(bid)
+        return nashSolutions
+
 
     def getMultiMOL(self, bids):
         if len(bids) == 0: return 0.0 # 対象bidが空集合の場合は0を返す
@@ -127,21 +155,36 @@ class NegoSetting(object):
             for value in values:
                 print(value.get('value'), end=' ')
             print()
-       
-        bids = ns.domain.getAllBids()
-        print("MOL (All bids)       : " + '{0:.6f}'.format(self.getMultiMOL(bids)))
+
+        print("Discount Factor  : ", end="")
+        for pref in self.prefs:
+            print(pref.getDiscountFactor(), end=" ")
         
-        overRV_Bids = ns.getOverRV_Bids_forAllPlayers()
-        print("MOL (ALL OverRV bids): " + '{0:.6f}'.format(self.getMultiMOL(overRV_Bids)))
+        print("\nReservation Value: ", end="")
+        for pref in self.prefs:
+            print(pref.getReservationValue(), end=" ")
+       
+        allBids = ns.domain.getAllBids()
+        print("\nMOL (ALL bids)              : " + '{0:.6f}'.format(self.getMultiMOL(allBids)))
+        
+        overRV_Bids = ns.getOverRV_Bids_forAllPlayers(allBids)
+        print("MOL (ALL OverRV bids)       : " + '{0:.6f}'.format(self.getMultiMOL(overRV_Bids)))
 
         paretoBids = ns.getParetoBids_forMultiPlayers()
-        print("MOL (ALL Pareto bids): " + '{0:.6f}'.format(self.getMultiMOL(paretoBids)))
+        print("MOL (ALL Pareto bids)       : " + '{0:.6f}'.format(self.getMultiMOL(paretoBids)))
 
-        for bid in bids:
+        overRV_paretoBids = ns.getOverRV_Bids_forAllPlayers(paretoBids)
+        print("MOL (ALL OverRV-Pareto bids): " + '{0:.6f}'.format(self.getMultiMOL(overRV_paretoBids)))
+
+        nashSolution_Bids = ns.getNashSolution()
+        print("MOL (ALL Nash-Solution bids): " + '{0:.6f}'.format(self.getMultiMOL(nashSolution_Bids)))
+
+        for bid in allBids:
             print(bid, end=' ')
             print('{0:.4f}'.format(ns.getUtilityValue(1, bid)), end=' ')
             print('{0:.4f}'.format(ns.getUtilityValue(2, bid)), end=' ')
-            print('{0:.4f}'.format(ns.getUtilityValue(3, bid)))
+            print('{0:.4f}'.format(ns.getUtilityValue(3, bid)), end=' ')
+            print('{0:.6f}'.format(ns.getNashProduct(bid)))
         
 
 # テスト
@@ -155,7 +198,14 @@ ns = NegoSetting(
     ]
 )
 ns.printNegoSetting()
-# print("Pareto: ", end="")
-# print(ns.getParetoBids_forMultiPlayers())
-ns.show3Dgraph(ns.getOverRV_Bids_forAllPlayers())
+allBids = ns.getDomain().getAllBids()
+print("OverRV Bids   : ", end="")
+print(ns.getOverRV_Bids_forAllPlayers(allBids))
+
+print("Pareto Bids   : ", end="")
+print(ns.getParetoBids_forMultiPlayers())
+
+print("Nash Solutions: ", end="")
+print(ns.getNashSolution())
+# ns.show3Dgraph(ns.getOverRV_Bids_forAllPlayers(allBids))
 
