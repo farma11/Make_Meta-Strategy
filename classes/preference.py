@@ -23,6 +23,7 @@ class Preference(domain.Domain):
         if self.__isCurrectFormat():
             self.__getPreferenceInfo()
         else:
+            print(preferenceXML_path)
             print("Error (" + self.domainXML_path + "): 交渉ドメインとフォーマットが一致しません．プログラムを終了します．", file=sys.stderr)
             sys.exit(1) # 異常終了
 
@@ -53,10 +54,12 @@ class Preference(domain.Domain):
     def __isCurrectFormat(self):
         issues = self.root.find('objective').findall('issue')
         if len(issues) != self.domain.getIssueSize():
+            print("Error: Issue数が不一致です", file=sys.stderr)
             return False
         for i, issue in enumerate(issues):
             values = issue.findall('item')
-            if len(values) != self.domain.getValueSize(i):
+            if len(values) != self.domain.getValueSize(i+1):
+                print("Error: Value数が不一致です. (" + str(i) + ") " + str(len(values)) + "!=" + str(self.domain.getValueSize(i)), file=sys.stderr)
                 return False
         return True
 
@@ -109,11 +112,11 @@ class Preference(domain.Domain):
     def getAllBids(self):
         return self.domain.getAllBids()
 
-    def getOverRV_Bids(self):
-        bids = self.domain.getAllBids()
+    def getOverRV_Bids(self, allBids):
+        allBids = self.domain.getAllBids()
 
         overRV_bids = []
-        for bid in bids:
+        for bid in allBids:
             if self.getUtilityValue(bid) >= self.reservationValue:
                 overRV_bids.append(bid)
         return overRV_bids
@@ -140,10 +143,10 @@ class Preference(domain.Domain):
             print('{0:.4f}'.format(self.getUtilityValue(bid)))
 
 # テスト
-us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
-us.printUtilitySpaceInfo()
-print(us.getAllBids())
-print(us.getOverRV_Bids())
+# us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
+# us.printUtilitySpaceInfo()
+# print(us.getAllBids())
+# print(us.getOverRV_Bids())
 # us.putDiscountFactor(0.39)
 # us.putReservationValue(0.9)
 # us.printUtilitySpaceInfo()
