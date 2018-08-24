@@ -32,6 +32,9 @@ class Domain(object):
     def getIssue(self, issuesID):
         return self.issues[issuesID-1]
 
+    def getIssueID(self, issue):
+        return self.issues.index(issue) + 1
+
     def getIssueSize(self):
         return len(self.issues)
 
@@ -41,7 +44,10 @@ class Domain(object):
     def getValue(self, issueID, valueID):
         return self.values[issueID-1][valueID-1]
 
-    def getValueSize(self, issueID):
+    def getValueID(self, issueID, value) -> int:
+        return self.values[issueID-1].index(value) + 1
+
+    def getValueSize(self, issueID) -> int:
         return len(self.values[issueID-1])
 
     def getDomainSize(self):
@@ -64,25 +70,25 @@ class Domain(object):
             sys.exit(1) # 異常終了
 
 
-
-
     def printDomainInfo(self):
         print("Name: " + self.getDomainName())
 
         issues = self.getIssues()
-        for i, issue in enumerate(issues):
-            print("Issue " + str(i) + ": " + issue.get('name') + " | ", end='')
+        for issue in issues:
+            # print("Issue " + str(i) + ": " + issue.get('name') + " | ", end='')
+            issueID = self.getIssueID(issue)
+            print("Issue " + str(issueID) + ": " + issue.get('name') + " | ", end='')
 
-            values = self.getValues(i+1)
+            values = self.getValues(issueID)
             for value in values:
-                print(value.get('value'), end=' ')
+                print("v" + str(self.getValueID(issueID, value)) + ":" + value.get('value'), end=' ')
             print()
 
         print("Domain Size: " + str(self.getDomainSize()))
         print(self.getAllBids())
 
 
-domain = Domain('../Scenarios/testScenario/testDomain.xml')
-domain.printDomainInfo()
+# domain = Domain('../Scenarios/testScenario/testDomain.xml')
+# domain.printDomainInfo()
 
     

@@ -17,6 +17,7 @@ class Preference(domain.Domain):
         self.root = self.tree.getroot()
 
         self.issueWeights = []
+        self.valueWeights = []
         self.issueMaxEvaluations = []
         self.discoutFactor = -1.0
         self.reservationValue = -1.0
@@ -30,6 +31,8 @@ class Preference(domain.Domain):
 
     def __getPreferenceInfo(self):
         self.issueWeights = self.__getIssueWeights()
+        for issue in self.root.find('objective').findall('issue'):
+            self.valueWeights.append(self.__getValueWeights(issue))
         self.issueMaxEvaluations = self.__getIssueMaxEvaluation()
         self.discoutFactor = float(self.root.find('discount_factor').get('value'))        
         self.reservationValue = float(self.root.find('reservation').get('value'))
@@ -39,6 +42,13 @@ class Preference(domain.Domain):
         weight_tags = self.root.find('objective').findall('weight')
         for weight_tag in weight_tags:
             weights.append(float(weight_tag.get('value')))
+        return weights
+
+    def __getValueWeights(self, issue):
+        weights = []
+        values = issue.findall('item')
+        for value in values:
+            weights.append(int(value.get('evaluation')))
         return weights
 
     def __getIssueMaxEvaluation(self):
@@ -73,6 +83,9 @@ class Preference(domain.Domain):
     def getIssueWeight(self, issueID):
         return self.issueWeights[issueID-1]
 
+    def getValueWeight(self, issueID, valueID):
+        return self.valueWeights[issueID-1][valueID-1]
+
     def getUtilityValue(self, bid):
         utility = 0.0
         issues = self.root.find('objective').findall('issue')
@@ -96,6 +109,9 @@ class Preference(domain.Domain):
         else:
             print("Error: 割引係数の値が不正です．プログラムを終了します．", file=sys.stderr)
             sys.exit(1) # 異常終了
+    
+    def getDiscountedUtilityValue(self, bid, time: float):
+        return self.getUtilityValue(bid) * (self.discoutFactor ** time)
 
     ### 留保価格関係
     def getReservationValue(self):
@@ -107,6 +123,9 @@ class Preference(domain.Domain):
         else:
             print("Error: 留保価格の値が不正です．プログラムを終了します．", file=sys.stderr)
             sys.exit(1) # 異常終了
+
+    def getDiscountedReservationValue(self, time: float):
+        return self.reservationValue * (self.discoutFactor ** time)
 
     ### 合意案候補関係
     def getAllBids(self):
@@ -125,26 +144,29 @@ class Preference(domain.Domain):
     def printUtilitySpaceInfo(self):
         print("Name: " + self.getPreferenceName())
 
-        issues = self.root.find('objective').findall('issue')
-        for i, issue in enumerate(issues):
-            print("Issue " + str(i) + ": " \
-                + issue.get('name') + " (" + str(self.getIssueWeight(i+1)) + " x)" \
+        domainInfo = self.getDomain()
+        issues = domainInfo.getIssues()
+        for issue in issues:
+            issueID = domainInfo.getIssueID(issue)
+            print("Issue " + str(issueID) + ": " \
+                + issue.get('name') + " (" + str(self.getIssueWeight(issueID)) + " x)" \
                 + " | ", end='')
-            values = issue.findall('item')
+            values = domainInfo.getValues(issueID)
             for value in values:
-                print(str(value.get('value')) + "(" + str(value.get('evaluation')) + ")", end=' ')
+                valueID = domainInfo.getValueID(issueID, value)
+                print(str(value.get('value')) + "(" + str(self.getValueWeight(issueID, valueID)) + ")", end=' ')
             print()
         print("Discount Factor: " + str(self.getDiscountFactor()))
         print("Reservation Value: " + str(self.getReservationValue()))
 
-        bids = self.domain.getAllBids()
+        bids = domainInfo.getAllBids()
         for bid in bids:
             print(bid, end=' ')
             print('{0:.4f}'.format(self.getUtilityValue(bid)))
 
 # テスト
-# us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
-# us.printUtilitySpaceInfo()
+us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
+us.printUtilitySpaceInfo()
 # print(us.getAllBids())
 # print(us.getOverRV_Bids())
 # us.putDiscountFactor(0.39)
