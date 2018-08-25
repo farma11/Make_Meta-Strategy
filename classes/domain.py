@@ -11,7 +11,9 @@ class Domain(object):
         self.root = self.tree.getroot()
 
         self.issues = []
+        self.issueNames = []
         self.values = []
+        self.valueNames = []
         self.domainSize = 1
         self.__getDomainInfo()
 
@@ -19,13 +21,24 @@ class Domain(object):
     def __getDomainInfo(self):
         self.issues = self.root.find('utility_space').find('objective').findall('issue')
         for issue in self.issues:
+            self.issueNames.append(issue.get('name'))
             values = issue.findall('item')
             self.values.append(values)
             self.domainSize *= len(values)
+            tempValueNames = []
+            for value in values:
+                tempValueNames.append(value.get('value'))
+            self.valueNames.append(tempValueNames)
 
+    ### Domain全体
     def getDomainName(self):
         return self.root.find('utility_space').find('objective').get('name')
 
+    def getDomainSize(self):
+        return self.domainSize
+
+    
+    ### Issue関係
     def getIssues(self):
         return self.issues
 
@@ -35,9 +48,14 @@ class Domain(object):
     def getIssueID(self, issue):
         return self.issues.index(issue) + 1
 
+    def getIssueName(self, issueID):
+        return self.issueNames[issueID-1]
+
     def getIssueSize(self):
         return len(self.issues)
 
+
+    ### Value関係
     def getValues(self, issueID):
         return self.values[issueID-1]
 
@@ -47,12 +65,14 @@ class Domain(object):
     def getValueID(self, issueID, value) -> int:
         return self.values[issueID-1].index(value) + 1
 
+    def getValueName(self, issueID, valueID):
+        return self.valueNames[issueID-1][valueID-1]
+
     def getValueSize(self, issueID) -> int:
         return len(self.values[issueID-1])
 
-    def getDomainSize(self):
-        return self.domainSize
-
+    
+    ### 合意案候補関係
     def getAllBids(self):
         bids = [[]]
         for i in range(len(self.issues)):
@@ -70,6 +90,7 @@ class Domain(object):
             sys.exit(1) # 異常終了
 
 
+    ### デバック関連
     def printDomainInfo(self):
         print("Name: " + self.getDomainName())
 
@@ -77,11 +98,12 @@ class Domain(object):
         for issue in issues:
             # print("Issue " + str(i) + ": " + issue.get('name') + " | ", end='')
             issueID = self.getIssueID(issue)
-            print("Issue " + str(issueID) + ": " + issue.get('name') + " | ", end='')
+            print("Issue " + str(issueID) + ": " + self.getIssueName(issueID) + " | ", end='')
 
             values = self.getValues(issueID)
             for value in values:
-                print("v" + str(self.getValueID(issueID, value)) + ":" + value.get('value'), end=' ')
+                valueID = self.getValueID(issueID, value)
+                print("v" + str(valueID) + ":" + self.getValueName(issueID, valueID), end=' ')
             print()
 
         print("Domain Size: " + str(self.getDomainSize()))

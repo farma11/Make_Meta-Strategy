@@ -3,7 +3,7 @@
 import sys
 import math
 from lxml import etree # XMLのパース
-import domain
+from . import domain
 
 
 class Preference(domain.Domain):
@@ -149,12 +149,12 @@ class Preference(domain.Domain):
         for issue in issues:
             issueID = domainInfo.getIssueID(issue)
             print("Issue " + str(issueID) + ": " \
-                + issue.get('name') + " (" + str(self.getIssueWeight(issueID)) + " x)" \
+                + str(domainInfo.getIssueName(issueID)) + " (" + str(self.getIssueWeight(issueID)) + " x)" \
                 + " | ", end='')
             values = domainInfo.getValues(issueID)
             for value in values:
                 valueID = domainInfo.getValueID(issueID, value)
-                print(str(value.get('value')) + "(" + str(self.getValueWeight(issueID, valueID)) + ")", end=' ')
+                print(str(domainInfo.getValueName(issueID, valueID)) + "(" + str(self.getValueWeight(issueID, valueID)) + ")", end=' ')
             print()
         print("Discount Factor: " + str(self.getDiscountFactor()))
         print("Reservation Value: " + str(self.getReservationValue()))
@@ -165,8 +165,8 @@ class Preference(domain.Domain):
             print('{0:.4f}'.format(self.getUtilityValue(bid)))
 
 # テスト
-us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
-us.printUtilitySpaceInfo()
+# us = Preference('../Scenarios/testScenario/testDomain.xml', '../Scenarios/testScenario/testPreference1.xml')
+# us.printUtilitySpaceInfo()
 # print(us.getAllBids())
 # print(us.getOverRV_Bids())
 # us.putDiscountFactor(0.39)

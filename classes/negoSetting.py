@@ -2,10 +2,12 @@
 
 import matplotlib.pyplot as plt
 import itertools
+import numpy as np
+from scipy.spatial.distance import euclidean
 from collections import Counter
 from mpl_toolkits.mplot3d import Axes3D
 
-import domain, preference
+from . import domain, preference
 
 
 class NegoSetting(object):
@@ -22,6 +24,9 @@ class NegoSetting(object):
     def getUtilityValue(self, prefID, bid):
         return self.prefs[prefID-1].getUtilityValue(bid)
 
+    def getDiscountedUtilityValue(self, prefID, bid, time: float):
+        return self.prefs[prefID-1].getDiscountedUtilityValue(bid, time)
+
     def getOverRV_Bids_forAllPlayers(self, allBids):
         overRV_Bids_set = set(set(map(tuple, allBids)))
         for pref in self.prefs:
@@ -30,6 +35,7 @@ class NegoSetting(object):
             # print(overRV_Bids_set)
         return list(overRV_Bids_set) 
 
+    ### Pareto最適に関連する関数群
     def getParetoBids_for2Players(self, prefID1, prefID2):
         paretoBids = []
 
@@ -78,6 +84,7 @@ class NegoSetting(object):
 
         return list(paretoBids_set)
 
+    ### Nash交渉解に関連する関数群
     def getNashProduct(self, bid):
         isOver_RV = True
 
@@ -107,6 +114,30 @@ class NegoSetting(object):
         return nashSolutions
 
 
+    ### 2点間の距離
+    def getPoint2PointDistance(self, p1, p2):
+        p1_npArray = np.array(p1)
+        p2_npArray = np.array(p2)
+        return euclidean(p1_npArray, p2_npArray)
+
+    def getNashDistance(self, p):
+        nash_ps = self.getNashSolution()
+
+        dist = int(1e7)
+        for nash_p in nash_ps:
+            dist = min(dist, self.getPoint2PointDistance(nash_p, p))
+        return dist
+
+    def getParetoFrontierDistance(self, p):
+        pareto_ps = self.getParetoBids_forMultiPlayers()
+
+        dist = int(1e7)
+        for pareto_p in pareto_ps:
+            dist = min(dist, self.getPoint2PointDistance(pareto_p, p))
+        return dist
+
+
+    ### MOL: Metric of Opposition Level に関する関数群
     def getMultiMOL(self, bids):
         if len(bids) == 0: return 0.0 # 対象bidが空集合の場合は0を返す
 
@@ -124,6 +155,7 @@ class NegoSetting(object):
         return (dist * len(self.prefs)) / ((len(self.prefs)-1) * len(bids))
 
 
+    ### グラフの描画に関する関数群
     def show3Dgraph(self, bids):
 
         bidUtils = [[], [], []]
@@ -164,48 +196,59 @@ class NegoSetting(object):
         for pref in self.prefs:
             print(pref.getReservationValue(), end=" ")
        
-        allBids = ns.domain.getAllBids()
+        allBids = self.domain.getAllBids()
         print("\nMOL (ALL bids)              : " + '{0:.6f}'.format(self.getMultiMOL(allBids)))
         
-        overRV_Bids = ns.getOverRV_Bids_forAllPlayers(allBids)
+        overRV_Bids = self.getOverRV_Bids_forAllPlayers(allBids)
         print("MOL (ALL OverRV bids)       : " + '{0:.6f}'.format(self.getMultiMOL(overRV_Bids)))
 
-        paretoBids = ns.getParetoBids_forMultiPlayers()
+        paretoBids = self.getParetoBids_forMultiPlayers()
         print("MOL (ALL Pareto bids)       : " + '{0:.6f}'.format(self.getMultiMOL(paretoBids)))
 
-        overRV_paretoBids = ns.getOverRV_Bids_forAllPlayers(paretoBids)
+        overRV_paretoBids = self.getOverRV_Bids_forAllPlayers(paretoBids)
         print("MOL (ALL OverRV-Pareto bids): " + '{0:.6f}'.format(self.getMultiMOL(overRV_paretoBids)))
 
-        nashSolution_Bids = ns.getNashSolution()
+        nashSolution_Bids = self.getNashSolution()
         print("MOL (ALL Nash-Solution bids): " + '{0:.6f}'.format(self.getMultiMOL(nashSolution_Bids)))
 
+        
+        print("\nbid, util1, util2, util3, pareto_dist, nash_dist")
         for bid in allBids:
             print(bid, end=' ')
-            print('{0:.4f}'.format(ns.getUtilityValue(1, bid)), end=' ')
-            print('{0:.4f}'.format(ns.getUtilityValue(2, bid)), end=' ')
-            print('{0:.4f}'.format(ns.getUtilityValue(3, bid)), end=' ')
-            print('{0:.6f}'.format(ns.getNashProduct(bid)))
+            for i in range(len(self.prefs)):
+                print('{0:.4f}'.format(self.getUtilityValue(i, bid)), end=' ')
+            print('{0:.4f}'.format(self.getParetoFrontierDistance(bid)), end=' ')
+            print('{0:.4f}'.format(self.getNashDistance(bid)), end='\n')
+            # print('{0:.6f}'.format(ns.getNashProduct(bid)))
+        
+        print("Pareto Frontier: " + str(self.getParetoBids_forMultiPlayers()))
+        print("Nash Solutions : " + str(self.getNashSolution()))
+
+        # self.show3Dgraph(allBids)
         
 
+
 # テスト
-root_path = '../Scenarios/testScenario/'
-ns = NegoSetting(
-    root_path + 'testDomain.xml',
-    [
-        root_path + 'testPreference1.xml',
-        root_path + 'testPreference2.xml',
-        root_path + 'testPreference3.xml',
-    ]
-)
-ns.printNegoSetting()
-allBids = ns.getDomain().getAllBids()
-print("OverRV Bids   : ", end="")
-print(ns.getOverRV_Bids_forAllPlayers(allBids))
+# root_path = '../Scenarios/Domain2/'
+# ns = NegoSetting(
+#     root_path + 'Domain2.xml',
+#     [
+#         root_path + 'Domain2_util1.xml',
+#         root_path + 'Domain2_util2.xml',
+#         root_path + 'Domain2_util3.xml',
+#     ]
+# )
+# ns.printNegoSetting()
+# allBids = ns.getDomain().getAllBids()
 
-print("Pareto Bids   : ", end="")
-print(ns.getParetoBids_forMultiPlayers())
+# if False:
+#     print("OverRV Bids   : ", end="")
+#     print(ns.getOverRV_Bids_forAllPlayers(allBids))
 
-print("Nash Solutions: ", end="")
-print(ns.getNashSolution())
-# ns.show3Dgraph(ns.getOverRV_Bids_forAllPlayers(allBids))
+#     print("Pareto Bids   : ", end="")
+#     print(ns.getParetoBids_forMultiPlayers())
+
+# print("Nash Solutions: ", end="")
+# print(ns.getNashSolution())
+    # ns.show3Dgraph(ns.getOverRV_Bids_forAllPlayers(allBids))
 
