@@ -72,6 +72,43 @@ class MainSimulator:
         '''
         return self.__get_agreement_list
 
+    def get_end_utility_list(self):
+        '''
+        過去の合意結果の効用値に関する情報のリストを取得する．
+        :rtype: [[bool, AbstractAction]]
+        :return: 過去の合意結果の効用値に関する情報を取得する．
+        '''
+        end_utility_list = []
+        for get_agreement_list in self.__get_agreement_list:
+            end_utility = {}
+            if get_agreement_list[0]:
+                action = get_agreement_list[1]
+                for j, agent in enumerate(self.__agent_list):
+                    if not isinstance(action, agentAction.EndNegotiation):
+                        end_utility[agent.get_name()] = self.__negoSetting.getDiscountedUtilityValue(j+1, action.get_bid(), action.get_time_offered())
+                    else:
+                        end_utility[agent.get_name()] = self.__negoSetting.getDiscountedReservationValue(j+1, action.get_time_offered())
+                # print("last turn:", self.__rule.get_time_now())
+                if not isinstance(action, agentAction.EndNegotiation):
+                    acceptedBid = action.get_bid()
+                    end_utility["agreement_bid"] = acceptedBid
+                    end_utility["time"] = self.__rule.get_time_now()
+                    end_utility["Dist.Pareto"] = self.__negoSetting.getParetoFrontierDistance(acceptedBid)
+                    end_utility["Dist.Nash"] = self.__negoSetting.getNashDistance(acceptedBid)
+                else:
+                    end_utility["agreement_bid"] = 0
+                    end_utility["time"] = self.__rule.get_time_now()
+                    # end_utility["parato_distance"] = self.display.get_parato_distance(
+                    #     self.__utilities.get_discount_reservation_value_list(action.get_time_offered())
+                    # )
+            else:
+                for j, agent in enumerate(self.__agent_list):
+                    end_utility[agent.get_name()] = 0
+                end_utility["agreement_bid"] = 0
+                end_utility["parato_distance"] = 0
+            end_utility_list.append(end_utility)
+        return end_utility_list
+
 
     def do_negotiation(self, is_printing: bool, print_times=10) -> bool:
         """
@@ -129,8 +166,8 @@ class MainSimulator:
                         acceptedBid = action.get_bid()
                         print("last turn:", self.__rule.get_time_now())
                         print("agreement bid:", acceptedBid)
-                        print("parato distance:", self.__negoSetting.getParetoFrontierDistance(acceptedBid))
-                        print("nash distance:", self.__negoSetting.getNashDistance(acceptedBid))
+                        print("Dist. Pareto:", self.__negoSetting.getParetoFrontierDistance(acceptedBid))
+                        print("Dist. Nash:", self.__negoSetting.getNashDistance(acceptedBid))
                         for j, agent in enumerate(self.__agent_list):
                             print(agent.get_name(), ":", self.__negoSetting.getDiscountedUtilityValue(j+1, acceptedBid, action.get_time_offered()))
                     else:
@@ -189,9 +226,6 @@ def test(is_printed=True, is_notebook=False):
     :param bool is_printed: 描画するかどうかのフラグ
     :param bool is_notebook: notebook上での描画かどうか
     """
-
-    
-
     here = os.path.dirname(os.path.abspath(__file__))
     simulator = MainSimulator(absNegoRule.DeadlineType.Round, 180,
                       here + '/Scenarios/Domain2/Domain2.xml',
@@ -199,15 +233,6 @@ def test(is_printed=True, is_notebook=False):
                           here + '/Scenarios/Domain2/Domain2_util1.xml',
                           here + '/Scenarios/Domain2/Domain2_util2.xml'
                       ])
-    ns = negoSetting.NegoSetting(
-        here + '/Scenarios/Domain2/Domain2.xml',
-        [
-            here + '/Scenarios/Domain2/Domain2_util1.xml',
-            here + '/Scenarios/Domain2/Domain2_util2.xml'
-        ]
-    )
-    ns.printNegoSetting()
-
                 
     module = importlib.import_module('agents.linearAgent')
     simulator.set_agent(module, 'LinearAgent', "LinearAgent1")
@@ -229,4 +254,4 @@ def test(is_printed=True, is_notebook=False):
     # simulator.display.show()
     return 0
 
-test()
+# test()
